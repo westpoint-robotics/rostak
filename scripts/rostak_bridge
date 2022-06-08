@@ -1,0 +1,6 @@
+import asyncio
+from rostak.rostak_bridge import RosTakBridge
+
+if __name__ == '__main__':
+    bridge = RosTakBridge()
+    asyncio.run(bridge.run())
