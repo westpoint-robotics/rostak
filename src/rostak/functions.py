@@ -1,9 +1,8 @@
 from datetime import datetime, timezone, timedelta
 import xml.etree.ElementTree as ET
+from pytak.constants import ISO_8601_UTC
 
-ISO_8601_UTC = "%Y-%m-%dT%H:%M:%S.%fZ"
-
-def new_cot(config, stale_in = 5) -> ET.Element:
+def new_cot(config, stale_in = 60) -> ET.Element:
 
     time = datetime.now(timezone.utc)
 
@@ -14,7 +13,7 @@ def new_cot(config, stale_in = 5) -> ET.Element:
         "how": "m-g",
         "time": time.strftime(ISO_8601_UTC),
         "start": time.strftime(ISO_8601_UTC),
-        "stale": (time + timedelta(minutes=stale_in)).strftime(ISO_8601_UTC)
+        "stale": (time + timedelta(seconds=stale_in)).strftime(ISO_8601_UTC)
     })
     
     ET.SubElement(root, "point", attrib={
@@ -25,11 +24,22 @@ def new_cot(config, stale_in = 5) -> ET.Element:
     detail = ET.SubElement(root, "detail")
     
     ET.SubElement(detail, "contact", attrib={
-        "callsign": config['callsign']
+        "callsign": config['callsign'],
+        "endpoint": "*:-1:stcp"
+    })
+    
+    ET.SubElement(detail, "precisionlocation", attrib={
+        "geopointsrc": "GPS",
+        "altsrc": "GPS"
+    })
+    
+    ET.SubElement(detail, "__group", attrib={
+        "team": config['team'],
+        "role": config["role"]
     })
     
     ET.SubElement(detail, "takv", attrib={
-        "platform": "westpointrobotics/rostak_bridge"
+        "platform": "westpointrobotics/rostak"
     })
     
     return root

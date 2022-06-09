@@ -1,13 +1,15 @@
 <launch>
     <arg name="cot_config_path" default="$(find rostak)/config/cot.yaml" />
     <arg name="fix_topic" default="/fix" />
+    <arg name="fix_rate" default="0.2" />
 
     <group ns="tak">
         <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
             <param name="cot_config_path" value="$(arg cot_config_path)" />
+            <param name="rate" value="$(arg fix_rate)" />
             <remap from="fix" to="fix_throttle" />
         </node>
 
-        <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) 0.2 fix_throttle" />
+        <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
     </group>
 </launch>
