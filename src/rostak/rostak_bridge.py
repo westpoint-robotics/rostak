@@ -22,28 +22,26 @@ class RosTakBridge:
         except:
             raise ValueError('TAK url must be valid')
 
-        # build transmitter
+        # bridge objects
         tx_queue = asyncio.Queue()
-        writer = pytak.EventTransmitter(tx_queue, tx_proto)
-        transmitter = RosTakTransmitter(tx_queue, {})
-        
-        # build receiver
         rx_queue = asyncio.Queue()
         reader = RosTakReceiver(rx_queue, rx_proto)
-
+        writer = pytak.EventTransmitter(tx_queue, tx_proto)
+        listener = RosCotListener(tx_queue, {})
+        
         # start workers, restart on error
         while True:
             done, pending = await asyncio.wait(
-                {transmitter.run(), writer.run(), reader.run()},
+                {listener.run(), reader.run(), writer.run()},
                 return_when=asyncio.FIRST_COMPLETED
             )
 
             for task in done:
                 rospy.loginfo(f"Task completed: {task}")
     
-class RosTakTransmitter(pytak.MessageWorker):
+class RosCotListener(pytak.MessageWorker):
     """
-    listen for CoT from ROS and transmit to TAK
+    listen for CoT from ROS and enqueue for TAK
     """
     def __init__(self, event_queue: asyncio.Queue,  config: dict) -> None:
         super().__init__(event_queue)
@@ -71,8 +69,10 @@ class RosTakReceiver(pytak.EventReceiver):
     async def run(self):
         pub = rospy.Publisher('tak_rx', String, queue_size=10)
         msg = String()
+        rospy.loginfo(" *** Publishing on tak_rx ***")
         while True:
             msg.data = await self.event_queue.get()
+            rospy.loginfo(msg.data)
             pub.publish(msg)
 
 if __name__ == '__main__':
