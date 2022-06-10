@@ -1,0 +1,7 @@
+COT_URL: tls://tak.westpointrobotics.site:8089
+PYTAK_TLS_CLIENT_CERT: "/workspace/src/rostak/secrets/client.pem"
+PYTAK_TLS_CLIENT_KEY: "/workspace/src/rostak/secrets/client-key.pem"
+PYTAK_TLS_CLIENT_CAFILE: "/workspace/src/rostak/secrets/takserver.pem"
+PYTAK_TLS_CLIENT_CIPHERS: ""
+PYTAK_TLS_DONT_VERIFY: "False"
+PYTAK_TLS_DONT_CHECK_HOSTNAME: "False"

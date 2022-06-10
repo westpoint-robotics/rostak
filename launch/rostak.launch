@@ -1,16 +1,18 @@
 <launch>
-    <arg name="tak_url" default="tls://localhost:8089" />
+    <!-- <arg name="tak_url" default="tls://localhost:8089" />
     <arg name="client_cert" default="$(find rostak)/secrets/client.pem" />
     <arg name="client_key" default="$(find rostak)/secrets/client-key.pem" />
-    <arg name="ca_cert" default="$(find rostak)/secrets/takserver.pem" />
+    <arg name="ca_cert" default="$(find rostak)/secrets/takserver.pem" /> -->
+    <arg name="tak_config_path" default="$(find rostak)/config/tak.yaml" />
     
     <node ns="tak" pkg="rostak" name="rostak_bridge" type="rostak_bridge" output="screen">
 
-        <param name="url" value="$(arg tak_url)" />
+        <rosparam command="load" file="$(arg tak_config_path)" />
         <env name="DEBUG" value="true" />
+        <!-- <param name="url" value="$(arg tak_url)" />
         <env name="PYTAK_TLS_CLIENT_CERT" value="$(arg client_cert)" />
         <env name="PYTAK_TLS_CLIENT_KEY" value="$(arg client_key)" />
-        <env name="PYTAK_TLS_CLIENT_CAFILE" value="$(arg ca_cert)" />
+        <env name="PYTAK_TLS_CLIENT_CAFILE" value="$(arg ca_cert)" /> -->
     
     </node>
 </launch>

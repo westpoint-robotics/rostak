@@ -34,7 +34,7 @@ def new_cot(config, stale_in = 60) -> ET.Element:
     })
     
     ET.SubElement(detail, "__group", attrib={
-        "team": config['team'],
+        "name": config['team'],
         "role": config["role"]
     })
     
@@ -43,3 +43,4 @@ def new_cot(config, stale_in = 60) -> ET.Element:
     })
     
     return root
+

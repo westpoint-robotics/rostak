@@ -1,8 +1,8 @@
 <launch>
-    <arg name="tak_url" default="tls://localhost:8089" />
+    <!-- <arg name="tak_url" default="tls://localhost:8089" /> -->
     
     <include file="$(find rostak)/launch/rostak.launch">
-        <arg name="tak_url" value="$(arg tak_url)" />
+        <!-- <arg name="tak_url" value="$(arg tak_url)" /> -->
     </include>
     
     <include file="$(find rostak)/launch/roscot.launch">
