@@ -23,24 +23,26 @@ class RosTakBridge:
     async def run(self):
 
         # connect to tak server
-        # tak_url_param = rospy.get_param('~url', "")
         try:
-            # tak_url = urllib.parse.urlparse(tak_url_param)
             rx_proto, tx_proto = await pytak.protocol_factory(self.config)
         except:
             raise ValueError('TAK url must be valid')
 
         # bridge objects
-        tx_queue = asyncio.Queue()
-        rx_queue = asyncio.Queue()
-        takcot_sender = pytak.TXWorker(tx_queue, self.config, tx_proto)
-        takcot_listener = RosTakReceiver(rx_queue, self.config, rx_proto)
-        roscot_listener = RosCotWorker(tx_queue, self.config)
-        
+        tasks = []
+        if tx_proto:
+            tx_queue = asyncio.Queue()
+            tasks.append(pytak.TXWorker(tx_queue, self.config, tx_proto).run())
+            tasks.append(RosCotWorker(tx_queue, self.config).run())
+
+        if rx_proto:
+            rx_queue = asyncio.Queue()
+            tasks.append(RosTakReceiver(rx_queue, self.config, rx_proto).run())
+
         # start workers, restart on error
         while True:
             done, pending = await asyncio.wait(
-                {roscot_listener.run(), takcot_listener.run(), takcot_sender.run()},
+                tasks,
                 return_when=asyncio.FIRST_COMPLETED
             )
 
@@ -61,6 +63,7 @@ class RosCotWorker(pytak.QueueWorker):
         )
     
     async def run(self):
+        rospy.loginfo(" *** Subscribing to tak_tx ***")
         rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
         # TODO: better way to keep async worker running so ROS callback threading continues
         while True:
@@ -78,10 +81,8 @@ class RosTakReceiver(pytak.RXWorker):
         msg = String()
         rospy.loginfo(" *** Publishing on tak_rx ***")
         while True:
-            # msg.data = await self.queue.get()
             cot = await self.reader.readuntil(separator=b'</event>')
             msg.data = cot.decode()
-            rospy.loginfo(msg.data)
             pub.publish(msg)
 
 if __name__ == '__main__':
