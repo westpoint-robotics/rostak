@@ -4,7 +4,7 @@ Proxy CoT messages (XML strings) between ROS and a TAK environment
 
 ## Config
 
-Install pytak using one of the [installation methods](https://github.com/ampledata/pytak#installation).
+Install pytak v5 using one of the [installation methods](https://github.com/ampledata/pytak#installation).
 
 See the example launch file.  Just needs a url for the TAK endpoint.
 If using a TLS transport, some environment variables need to be set.
