@@ -1,32 +1,24 @@
 import rospy
-import xml.etree.ElementTree as ET
-import yaml
-from rostak.functions import new_cot
+from rostak.cot_utility import CotUtility
 from std_msgs.msg import String
 from sensor_msgs.msg import NavSatFix
 
 class RosCotFix:
     def __init__(self):
         rospy.init_node("roscot_fix")
-
-        config_path = rospy.get_param('~cot_config_path')
-        with open(config_path) as config:
-            self.config = yaml.safe_load(config)
-        rospy.loginfo(self.config)
-        
+        config_path = rospy.get_param('~cot_params')
+        self.util = CotUtility(config_path)
         self.rate = rospy.get_param('~rate', 0.2)
         self.tx = rospy.Publisher('tak_tx', String, queue_size=1)
         self.msg = String()
         rospy.Subscriber("fix", NavSatFix, self.publish_fix)
+        rospy.loginfo(self.util.get_config())
 
     def publish_fix(self, msg):
-        """Generate a location COT Event."""
-        cot = new_cot(self.config, 2 * max(1, 1 / self.rate))
-        point = cot.find("point")
-        point.set("lat", str(msg.latitude))
-        point.set("lon", str(msg.longitude))
-        point.set("hae", str(msg.altitude))
-        self.msg.data = ET.tostring(cot).decode()
+        """Generate a status COT Event."""
+        self.util.set_point(msg)
+        stale_in = 2 * max(1, 1 / self.rate)
+        self.msg.data = self.util.new_status_msg(stale_in)
         self.tx.publish(self.msg)
 
 if __name__ == '__main__':

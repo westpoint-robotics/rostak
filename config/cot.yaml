@@ -1,7 +1,7 @@
-uid: edu.westpoint.rrc.nemo
-callsign: NEMO
-team: cyan
-role: team member
-type: a-f-G-E-V-robot
+callsign: callsign
+uid: edu.westpoint.rrc.callsign
+team: Cyan
+role: Team Member
+type: a-f-G-E-V-ugv
 radius: 2.0
 height: 2.0

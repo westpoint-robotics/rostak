@@ -1,11 +1,25 @@
 <launch>
-    <arg name="tak_url" default="tls://localhost:8089" />
+    <arg name="tak_params" default="$(find rostak)/config/tak.yaml" />
     
-    <include file="$(find rostak)/launch/rostak.launch">
-        <arg name="tak_url" value="$(arg tak_url)" />
-    </include>
-    
-    <include file="$(find rostak)/launch/roscot.launch">
-    </include>
-    
+    <arg name="cot_params" default="$(find rostak)/config/cot.yaml" />
+    <arg name="fix_topic" default="/fix" />
+    <arg name="fix_rate" default="0.2" />
+
+    <group ns="tak">
+
+        <node pkg="rostak" name="rostak_bridge" type="rostak_bridge" output="screen">
+            <rosparam command="load" file="$(arg tak_params)" />
+            <env name="DEBUG" value="false" />
+        </node>
+        
+        <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
+            <param name="cot_params" value="$(arg cot_params)" />
+            <param name="rate" value="$(arg fix_rate)" />
+            <remap from="fix" to="fix_throttle" />
+        </node>
+
+        <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
+        
+    </group>
+
 </launch>
