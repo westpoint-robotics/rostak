@@ -1,4 +1,4 @@
 **/secrets
-**/security
+**/security/
 **/__pycache__
 **/*.pyc
