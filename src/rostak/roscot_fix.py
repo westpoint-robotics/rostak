@@ -7,7 +7,7 @@ class RosCotFix:
     def __init__(self):
         rospy.init_node("roscot_fix")
         config_path = rospy.get_param('~cot_params')
-        self.util = CotFixUtility(config_path)
+        self.util = CotUtility(config_path)
         self.rate = rospy.get_param('~rate', 0.2)
         self.tx = rospy.Publisher('tak_tx', String, queue_size=1)
         self.msg = String()
