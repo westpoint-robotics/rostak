@@ -3,18 +3,18 @@ from rostak.cot_utility import CotUtility
 from std_msgs.msg import String
 from sensor_msgs.msg import NavSatFix
 
-class RosCotFix:
+class RosCotObj:
     def __init__(self):
-        rospy.init_node("roscot_fix")
+        rospy.init_node("roscot_obj")
         config_path = rospy.get_param('~cot_params')
-        self.util = CotFixUtility(config_path)
+        self.util = CotUtility(config_path)
         self.rate = rospy.get_param('~rate', 0.2)
         self.tx = rospy.Publisher('tak_tx', String, queue_size=1)
         self.msg = String()
-        rospy.Subscriber("fix", NavSatFix, self.publish_fix)
+        rospy.Subscriber("obj", NavSatFix, self.publish_obj)
         rospy.loginfo(self.util.get_config())
 
-    def publish_fix(self, msg):
+    def publish_obj(self, msg):
         """Generate a status COT Event."""
         self.util.set_point(msg)
         stale_in = 2 * max(1, 1 / self.rate)
@@ -22,5 +22,5 @@ class RosCotFix:
         self.tx.publish(self.msg)
 
 if __name__ == '__main__':
-    RosCotFix()
+    RosCotObj()
     rospy.spin()

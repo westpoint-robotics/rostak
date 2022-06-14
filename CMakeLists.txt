@@ -14,6 +14,8 @@ include_directories(
 )
 
 catkin_install_python(PROGRAMS
+    scripts/rostak_path.py
+    scripts/rostak_goto.py
     scripts/rostak_bridge
     scripts/roscot_fix
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
