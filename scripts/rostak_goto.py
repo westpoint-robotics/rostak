@@ -42,6 +42,7 @@ class TakGoTo():
             pose_msg.pose.position.y = crnt_utm_n
             pose_msg.header.stamp = rospy.Time.now()
             pose_msg.header.frame_id = 'utm'
+            print('POSE MSG: ', pose_msg)
 
             self.goto_pub.publish(pose_msg)
 

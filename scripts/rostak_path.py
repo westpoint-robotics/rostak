@@ -17,7 +17,7 @@ class TakPath():
 
 
     def tak_tx_cb(self,msg):
-        print('HERE')
+
         remarks = String()
         xml_f = ET.ElementTree(ET.fromstring(msg.data))
         root = xml_f.getroot()

@@ -18,6 +18,7 @@ catkin_install_python(PROGRAMS
     scripts/rostak_goto.py
     scripts/rostak_bridge
     scripts/roscot_fix
+    src/rostak/roscot_obj.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

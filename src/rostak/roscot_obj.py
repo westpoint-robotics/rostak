@@ -1,25 +1,34 @@
+#!/usr/bin/env python3
 import rospy
-from rostak.cot_utility import CotUtility
+from rostak.cot_utils import CotUtility
+from rostak.LatLongUTMconversion import UTMtoLL
 from std_msgs.msg import String
+from visualization_msgs.msg import MarkerArray
 from sensor_msgs.msg import NavSatFix
 
 class RosCotObj:
     def __init__(self):
         rospy.init_node("roscot_obj")
-        config_path = rospy.get_param('~cot_params')
-        self.util = CotUtility(config_path)
+        self.config_path = rospy.get_param('~cot_params')
+        self.util = CotUtility(self.config_path)
         self.rate = rospy.get_param('~rate', 0.2)
         self.tx = rospy.Publisher('tak_tx', String, queue_size=1)
-        self.msg = String()
-        rospy.Subscriber("obj", NavSatFix, self.publish_obj)
+        self.tx_msg = String()
+        self.zone = rospy.get_param('~utm_zone')
+        rospy.Subscriber("obj_utm", MarkerArray, self.publish_obj)
         rospy.loginfo(self.util.get_config())
 
     def publish_obj(self, msg):
         """Generate a status COT Event."""
-        self.util.set_point(msg)
-        stale_in = 2 * max(1, 1 / self.rate)
-        self.msg.data = self.util.new_status_msg(stale_in)
-        self.tx.publish(self.msg)
+        print('GOT OBJ MSG')
+        for marker in msg.markers:
+            self.util.set_object_str(marker.text)
+            (lat,lon) = UTMtoLL(23,marker.pose.position.y,marker.pose.position.x,self.zone)
+            self.util.set_point((lat,lon,marker.pose.position.z))
+            stale_in = 2 * max(1, 1 / self.rate)
+            self.tx_msg.data = self.util.new_status_msg(stale_in)
+            print('\n',self.tx_msg,'\n')
+            self.tx.publish(self.tx_msg)
 
 if __name__ == '__main__':
     RosCotObj()
