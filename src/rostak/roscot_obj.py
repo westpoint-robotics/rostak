@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import rospy
 from rostak.cot_utils import CotUtility
-from rostak.LatLongUTMconversion import UTMtoLL
+from rostak.cot_conversions import UTMtoLL
 from std_msgs.msg import String
 from visualization_msgs.msg import MarkerArray
-from sensor_msgs.msg import NavSatFix
 
 class RosCotObj:
     def __init__(self):
@@ -14,8 +13,8 @@ class RosCotObj:
         self.rate = rospy.get_param('~rate', 0.2)
         self.tx = rospy.Publisher('tak_tx', String, queue_size=1)
         self.tx_msg = String()
-        self.zone = rospy.get_param('~utm_zone')
-        rospy.Subscriber("obj_utm", MarkerArray, self.publish_obj)
+        self.zone = self.util.get_zone()
+        rospy.Subscriber("obj", MarkerArray, self.publish_obj)
         rospy.loginfo(self.util.get_config())
 
     def publish_obj(self, msg):
@@ -23,11 +22,14 @@ class RosCotObj:
         print('GOT OBJ MSG')
         for marker in msg.markers:
             self.util.set_object_str(marker.text)
-            (lat,lon) = UTMtoLL(23,marker.pose.position.y,marker.pose.position.x,self.zone)
+            if marker.header.frame_id == 'utm':
+                (lat,lon) = UTMtoLL(23,marker.pose.position.y,marker.pose.position.x,self.zone)
+            else:
+                lat, lon = marker.pose.position.x ,marker.pose.position.y
+
             self.util.set_point((lat,lon,marker.pose.position.z))
             stale_in = 2 * max(1, 1 / self.rate)
             self.tx_msg.data = self.util.new_status_msg(stale_in)
-            print('\n',self.tx_msg,'\n')
             self.tx.publish(self.tx_msg)
 
 if __name__ == '__main__':

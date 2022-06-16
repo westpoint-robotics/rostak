@@ -128,3 +128,6 @@ class CotUtility:
 
     def get_config(self):
         return self.cfg
+
+    def get_zone(self):
+        return self.cfg['utm_zone']
