@@ -1,5 +1,5 @@
 <launch>
-    <arg name="tak_params" default="$(find rostak)/config/tak.yaml" />
+    <arg name="tak_params" default="$(find rostak)/security/tak.yaml" />
     
     <arg name="cot_params" default="$(find rostak)/config/cot.yaml" />
     <arg name="fix_topic" default="/fix" />
@@ -12,14 +12,22 @@
             <env name="DEBUG" value="false" />
         </node>
         
-        <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
+        <node pkg="rostak" name="roscot_fix" type="roscot_fix.py" output="screen">
             <param name="cot_params" value="$(arg cot_params)" />
             <param name="rate" value="$(arg fix_rate)" />
-            <remap from="fix" to="fix_throttle" />
         </node>
 
-        <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
+        <node pkg="rostak" name="roscot_obj" type="roscot_obj.py" output="screen">
+            <param name="cot_params" value="$(arg cot_params)" />
+            <param name="rate" value="$(arg fix_rate)" />
+        </node>
+
+        <node pkg="rostak" name="rostak_path" type="rostak_path.py" output="screen"/>
+        <node pkg="rostak" name="rostak_goto" type="rostak_goto.py" output="screen"/>
+
+        <!--node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" /-->
         
     </group>
+    <include file="$(find rostak_test)/launch/test.launch"/>
 
 </launch>
