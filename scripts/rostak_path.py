@@ -11,7 +11,8 @@ class TakPath():
         
         rospy.Subscriber('/tak/tak_rx', String, self.tak_tx_cb)
 
-        self.path_pub = rospy.Publisher("rostak_path", Path, queue_size = 10)
+        self.path_utm_pub = rospy.Publisher("rostak_path_utm", Path, queue_size = 10)
+        self.path_ll_pub = rospy.Publisher("rostak_path_ll", Path, queue_size = 10)
         self.remarks_pub = rospy.Publisher("rostak_path_remarks", String, queue_size = 10)
 
 
@@ -26,29 +27,39 @@ class TakPath():
                 details = root.findall('detail')
                 remarks.data = details[0].find('remarks').text
 
-                path_msg = Path()
-                path_msg.header.stamp = rospy.Time.now()
-                path_msg.header.frame_id = 'utm'
+                utm_msg = Path()
+                utm_msg.header.stamp = rospy.Time.now()
+                utm_msg.header.frame_id = 'utm'
+                ll_msg = Path()
+                ll_msg.header.stamp = rospy.Time.now()
+                ll_msg.header.frame_id = 'latlon'
                 waypoints = xml_f.findall("./detail/link")
                 for wp in waypoints:
                     pnt_str = wp.attrib['point'].split(",")
                     (lat,lon) = (float(pnt_str[0]),float(pnt_str[1])) 
                     (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
 
-                    wp_pose = PoseStamped()
-                    wp_pose.header = path_msg.header
-                    wp_pose.pose.position.x = float(crnt_utm_e)
-                    wp_pose.pose.position.y = float(crnt_utm_n)
-                    wp_pose.pose.orientation.w = 1
-                    path_msg.poses.append(wp_pose)
-                rospy.loginfo('Published Path Message: %s' %(path_msg))
-                self.path_pub.publish(path_msg)
+                    utm_pose = PoseStamped()
+                    utm_pose.header = utm_msg.header
+                    utm_pose.pose.position.x = float(crnt_utm_e)
+                    utm_pose.pose.position.y = float(crnt_utm_n)
+                    utm_pose.pose.orientation.w = 1
+                    utm_msg.poses.append(utm_pose)
+
+                    ll_pose = PoseStamped()
+                    ll_pose.header = ll_msg.header
+                    ll_pose.pose.position.x = lat
+                    ll_pose.pose.position.y = lon
+                    ll_pose.pose.orientation.w = 1
+                    ll_msg.poses.append(ll_pose)
+                #rospy.loginfo('Published Path Message: %s' %(utm_msg))
+                self.path_utm_pub.publish(utm_msg)
+                self.path_ll_pub.publish(ll_msg)
                 self.remarks_pub.publish(remarks)
         except Exception as e:
             rospy.logwarn("Error of %s while parsing the path CoT xml" %(str(e)))
 
                 
-
 
 if __name__ == '__main__':
     

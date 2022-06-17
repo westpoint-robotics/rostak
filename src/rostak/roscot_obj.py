@@ -18,8 +18,6 @@ class RosCotObj:
         rospy.loginfo(self.util.get_config())
 
     def publish_obj(self, msg):
-        """Generate a status COT Event."""
-        print('GOT OBJ MSG')
         for marker in msg.markers:
             self.util.set_object_str(marker.text)
             if marker.header.frame_id == 'utm':

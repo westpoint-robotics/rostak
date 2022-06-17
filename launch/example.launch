@@ -23,7 +23,7 @@
         </node>
 
         <node pkg="rostak" name="rostak_path" type="rostak_path.py" output="screen"/>
-        
+        <node pkg="rostak" name="rostak_goto" type="rostak_goto.py" output="screen"/>
 
         <!--node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" /-->
         

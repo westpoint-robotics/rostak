@@ -1,8 +1,8 @@
 import rospy
 import numpy as np
-from tf2_ros import tf_conversions
+import tf2_ros as tf
 import xml.etree.ElementTree as ET
-from rostak.LatLongUTMconversion import LLtoUTM
+from rostak.cot_conversions import LLtoUTM
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseArray, PoseStamped
 
@@ -11,11 +11,12 @@ class TakGoTo():
 
     def __init__(self):
         
-        rospy.Subscriber('/tak/tak_rx', String, self.tak_tx_cb)
+        rospy.Subscriber('/tak/tak_rx', String, self.tak_rx_cb)
 
-        self.goto_pub = rospy.Publisher("rostak_goto", PoseStamped, queue_size = 10)
+        self.goto_utm_pub = rospy.Publisher("rostak_goto_utm", PoseStamped, queue_size = 10)
+        self.goto_ll_pub = rospy.Publisher("rostak_goto_ll", PoseStamped, queue_size = 10)
 
-    def tak_tx_cb(self,msg):
+    def tak_rx_cb(self,msg):
         xml_f = ET.ElementTree(ET.fromstring(msg.data))
         root = xml_f.getroot()
         
@@ -27,24 +28,37 @@ class TakGoTo():
 
             (zone,crnt_utm_e,crnt_utm_n) = LLtoUTM(23, lat, lon)
 
-            pose_msg = PoseStamped()
+            utm_msg = PoseStamped()
+            ll_msg = PoseStamped()
             if tak_orientation != 'NA':
-                quat = tf_conversions.transformations.quaternion_from_euler(0,0,float(tak_orientation/180*np.pi))
-                pose_msg.pose.orientation.x = quat[0]
-                pose_msg.pose.orientation.y = quat[1]
-                pose_msg.pose.orientation.z = quat[2]
-                pose_msg.pose.orientation.w = quat[3]
+                quat = tf.tf_conversions.transformations.quaternion_from_euler(0,0,float(tak_orientation/180*np.pi))
+                utm_msg.pose.orientation.x = quat[0]
+                utm_msg.pose.orientation.y = quat[1]
+                utm_msg.pose.orientation.z = quat[2]
+                utm_msg.pose.orientation.w = quat[3]
+
+                ll_msg.pose.orientation.x = quat[0]
+                ll_msg.pose.orientation.y = quat[1]
+                ll_msg.pose.orientation.z = quat[2]
+                ll_msg.pose.orientation.w = quat[3]
 
             if tak_altitude != 'NA':
-                pose_msg.pose.position.z = float(tak_altitude)
+                utm_msg.pose.position.z = float(tak_altitude)
+                ll_msg.pose.position.z = float(tak_altitude)
 
-            pose_msg.pose.position.x = crnt_utm_e
-            pose_msg.pose.position.y = crnt_utm_n
-            pose_msg.header.stamp = rospy.Time.now()
-            pose_msg.header.frame_id = 'utm'
-            print('POSE MSG: ', pose_msg)
+            utm_msg.pose.position.x = crnt_utm_e
+            utm_msg.pose.position.y = crnt_utm_n
+            utm_msg.header.stamp = rospy.Time.now()
+            utm_msg.header.frame_id = 'utm'
 
-            self.goto_pub.publish(pose_msg)
+            ll_msg.pose.position.x = lat
+            ll_msg.pose.position.y = lon
+            ll_msg.header.stamp = rospy.Time.now()
+            ll_msg.header.frame_id = 'latlon'
+            print('POSE MSG: ', utm_msg)
+
+            self.goto_utm_pub.publish(utm_msg)
+            self.goto_ll_pub.publish(ll_msg)
 
 if __name__ == '__main__':
     rospy.init_node("rostak_goto")

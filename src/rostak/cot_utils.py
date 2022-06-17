@@ -60,12 +60,10 @@ class CotUtility:
     def set_point(self, point: tuple):
         self.fix = {'latitude': point[0], 'longitude': point[1], 'altitude':point[2]}
 
-
     def new_status_msg(self, stale_in = 60) -> str:
         return ET.tostring(
             self.new_status(stale_in)
         ).decode()
-
 
     def new_status(self, stale_in = 60) -> ET.Element:
         cot = self.new_cot(stale_in)
@@ -93,7 +91,6 @@ class CotUtility:
         
         return cot
 
-
     def new_cot(self, stale_in = 60) -> ET.Element:
         cot = ET.Element("event", attrib=self.header(stale_in))
 
@@ -101,7 +98,6 @@ class CotUtility:
         ET.SubElement(cot, "detail")
 
         return cot
-
 
     def header(self, stale_in):
         time = datetime.now(timezone.utc)
@@ -125,6 +121,41 @@ class CotUtility:
             "le": str(self.cfg['height'])
         }
 
+    def new_chat_msg(self, stale_in = 60) -> str:
+        return ET.tostring(
+            self.new_chat(stale_in)
+        ).decode()
+
+    def new_chat(self, text, stale_in = 84600):
+        msg_id = str(uuid.uuid4())
+        
+        cot = self.new_cot(stale_in)
+        cot.set("type", "b-t-f")
+
+        detail = cot.find("detail")
+        
+        chat = ET.SubElement(detail, "__chat", {
+            "parent": "",
+            "groupOwner": "false",
+            "messageId": msg_id,
+            "chatroom": self.cfg["team"],
+            "id": self.cfg['team'],
+            "senderCallsign": self.cfg['callsign']
+        })
+
+        remarks = ET.SubElement(detail, "remarks", {
+            "source": "",
+            "time": ""
+        })
+        remarks.text = text
+        
+        ET.SubElement(detail, "link", {
+            "uid": self.cfg['uid'],
+            "type": self.cfg['type'],
+            "relation": "p-p"
+        })
+        
+        return cot
 
     def get_config(self):
         return self.cfg
