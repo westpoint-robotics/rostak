@@ -55,7 +55,6 @@ class TakGoTo():
             ll_msg.pose.position.y = lon
             ll_msg.header.stamp = rospy.Time.now()
             ll_msg.header.frame_id = 'latlon'
-            print('POSE MSG: ', utm_msg)
 
             self.goto_utm_pub.publish(utm_msg)
             self.goto_ll_pub.publish(ll_msg)
