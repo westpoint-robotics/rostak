@@ -12,11 +12,17 @@
             <env name="DEBUG" value="false" />
         </node>
         
-        <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
+        <node pkg="rostak" name="rostak_client" type="rostak_client" output="screen">
             <param name="cot_params" value="$(arg cot_params)" />
             <param name="rate" value="$(arg fix_rate)" />
             <remap from="fix" to="fix_throttle" />
         </node>
+
+        <!-- <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
+            <param name="cot_params" value="$(arg cot_params)" />
+            <param name="rate" value="$(arg fix_rate)" />
+            <remap from="fix" to="fix_throttle" />
+        </node> -->
 
         <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
         

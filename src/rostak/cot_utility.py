@@ -13,19 +13,21 @@ class CotUtility:
             self.cfg = yaml.safe_load(config)
         
         self.cfg["uid"] = self.cfg["uid"].replace("callsign", self.cfg["callsign"])
-        
+        self.atoms = {}
+        self.course = 0.0
+        self.speed = 0.0
+        self.battery = 0
         self.fix = {
-            "latitude": "0.0",
-            "longitude": "0.0",
-            "altitude": "0.0"
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "altitude": 0.0
         }
+        
 
     def new_cot(self, stale_in = 60) -> ET.Element:
         cot = ET.Element("event", attrib=self.header(stale_in))
-        
         ET.SubElement(cot, "point", attrib=self.current_point())
         ET.SubElement(cot, "detail")
-        
         return cot
 
     def new_status_msg(self, stale_in = 60) -> str:
@@ -33,9 +35,9 @@ class CotUtility:
             self.new_status(stale_in)
         ).decode()
     
-    def new_chat_msg(self, stale_in = 60) -> str:
+    def new_chat_msg(self, text, stale_in = 60) -> str:
         return ET.tostring(
-            self.new_chat(stale_in)
+            self.new_chat(text, stale_in)
         ).decode()
     
     def new_status(self, stale_in = 60) -> ET.Element:
@@ -43,38 +45,51 @@ class CotUtility:
         cot = self.new_cot(stale_in)
         
         detail = cot.find("detail")
-        
+
         ET.SubElement(detail, "contact", attrib={
             "callsign": self.cfg['callsign'],
             "endpoint": "*:-1:stcp"
-        })
-        
-        ET.SubElement(detail, "precisionlocation", attrib={
-            "geopointsrc": "GPS",
-            "altsrc": "GPS"
         })
         
         ET.SubElement(detail, "__group", attrib={
             "name": self.cfg['team'],
             "role": self.cfg["role"]
         })
+
+        ET.SubElement(detail, "track", attrib={
+            "course": str(self.course),
+            "speed": str(self.speed)
+        })
+
+        ET.SubElement(detail, "status", attrib={
+            "battery": str(self.battery)
+        })
+
+        ET.SubElement(detail, "precisionlocation", attrib={
+            "geopointsrc": "GPS",
+            "altsrc": "GPS"
+        })
         
         ET.SubElement(detail, "takv", attrib={
-            "platform": "westpointrobotics/rostak"
+            "device": "robot_payload",
+            "os": "os",
+            "platform": "westpointrobotics/rostak",
+            "version": "1.0"
         })
         
         return cot
 
-    def new_chat(self, text, stale_in = 84600):
+    def new_chat(self, text, stale_in = 84600) -> ET.Element:
         msg_id = str(uuid.uuid4())
         
         cot = self.new_cot(stale_in)
+        cot.set("uid", "GeoChat." + self.cfg["uid"] + "." + self.cfg["team"] + "." + msg_id)
         cot.set("type", "b-t-f")
 
         detail = cot.find("detail")
         
         chat = ET.SubElement(detail, "__chat", {
-            "parent": "",
+            "parent": "TeamGroups",
             "groupOwner": "false",
             "messageId": msg_id,
             "chatroom": self.cfg["team"],
@@ -83,8 +98,8 @@ class CotUtility:
         })
         
         remarks = ET.SubElement(detail, "remarks", {
-            "source": "",
-            "time": ""
+            "source": "BAO.F.ATAK." + self.cfg["uid"],
+            "time": cot.get("time")
         })
         remarks.text = text
         
@@ -99,6 +114,12 @@ class CotUtility:
     def set_point(self, fix: dict):
         self.fix = fix
     
+    def set_speed(self, speed):
+        self.speed = speed
+        
+    def set_course(self, course):
+        self.course = course
+
     def current_point(self):
         return {
             "lat": str(self.fix.latitude),
@@ -108,6 +129,9 @@ class CotUtility:
             "le": str(self.cfg['height'])
         }
     
+    def is_moving(self):
+        return self.speed > 0.5
+
     def header(self, stale_in):
         time = datetime.now(timezone.utc)
         return {
@@ -122,3 +146,74 @@ class CotUtility:
 
     def get_config(self):
         return self.cfg
+
+    def extract_cmd(self, cot):
+        remarks = cot.find("./detail/remarks")
+        if remarks is None:
+            return ""
+        text = remarks.text if "#!" in remarks.text else ""
+        print(text)
+        return text.lower()
+
+    def extract_callsign(self, cot):
+        contact = cot.find("./detail/contact")
+        if contact is None:
+            return ""
+        callsign = contact.get("callsign")
+        return callsign.replace(" ", "").lower()
+
+    def extract_point(self, cot):
+        point = cot.find("./point")
+        if point is None:
+            return ""
+        return point.get("lat", "0.0") + "," + point.get("lon", "0.0") + "," + point.get("hae", "0.0")
+
+    def extract_route(self, cot):
+        links = [x.attrib["point"] for x in cot.findall("./detail/link")]
+        delimiter = " "
+        return delimiter.join(links)
+
+    def resolve_target(self, item):
+        if item in self.atoms.keys():
+            return self.atoms[item]
+        found = [x for x in self.atoms.values() if x["callsign"] == item]
+        return found[0]["data"] if len(found) > 0 else None
+
+    def process_cot(self, xml):
+        # print(xml)
+        cot = ET.fromstring(xml)
+        uid=cot.get("uid").lower()
+        callsign = self.extract_callsign(cot)
+        point = self.extract_point(cot)
+        code = cot.get("type")
+        
+        ''' record atoms '''
+        if code.startswith("a-"):
+            self.atoms[uid] = {
+                "code": code,
+                "callsign": callsign,
+                "data": point
+            }
+            print("updated " + callsign + " at " + point)
+        
+        ''' record route '''
+        if code.startswith("b-m-r"):
+            route = self.extract_route(cot)
+            self.atoms[uid] = {
+                "code": code,
+                "callsign": callsign,
+                "data": route
+            }
+        
+        ''' if chat msg has command, resolve target callsign '''
+        if code.startswith("b-t-f"):
+            cmd = self.extract_cmd(cot)
+            parts = cmd.split(" ")
+            if len(parts) < 2:
+                return cmd 
+            data = self.resolve_target(parts[1])
+            if parts[1] == "me":
+                data = point
+            return cmd + " " + data
+
+        return ""

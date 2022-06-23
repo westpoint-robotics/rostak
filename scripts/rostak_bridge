@@ -1,3 +1,4 @@
+#!/bin/env/python3
 import asyncio
 from rostak.rostak_bridge import RosTakBridge
 

@@ -24,6 +24,7 @@ class RosTakBridge:
 
         # connect to tak server
         try:
+            rospy.loginfo(self.config["COT_URL"])
             rx_proto, tx_proto = await pytak.protocol_factory(self.config)
         except:
             raise ValueError('TAK url must be valid')
@@ -69,13 +70,13 @@ class RosCotWorker(pytak.QueueWorker):
         while True:
             await asyncio.sleep(0.25)
     
-class RosTakReceiver(pytak.RXWorker):
+class RosTakReceiver():
     """
     receive CoT from TAK and publish to ROS
     """
     def __init__(self, queue: asyncio.Queue, config: dict, reader: asyncio.Protocol) -> None:
-        super().__init__(queue, config, reader)
-
+        self.reader = reader
+        
     async def run(self):
         pub = rospy.Publisher('tak_rx', String, queue_size=10)
         msg = String()
