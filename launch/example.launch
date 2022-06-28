@@ -3,7 +3,7 @@
     
     <arg name="cot_params" default="$(find rostak)/config/cot.yaml" />
     <arg name="fix_topic" default="/fix" />
-    <arg name="fix_rate" default="0.2" />
+    <arg name="fix_rate" default="1" />
 
     <group ns="tak">
 

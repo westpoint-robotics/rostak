@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import re
 import uuid
 import xml.etree.ElementTree as ET
 import yaml
@@ -22,7 +23,6 @@ class CotUtility:
             "longitude": 0.0,
             "altitude": 0.0
         }
-        
 
     def new_cot(self, stale_in = 60) -> ET.Element:
         cot = ET.Element("event", attrib=self.header(stale_in))
@@ -82,20 +82,38 @@ class CotUtility:
     def new_chat(self, text, stale_in = 84600) -> ET.Element:
         msg_id = str(uuid.uuid4())
         
+        # if reply-to:
+        match = re.search(r"reply-to:([^\s]+)", text)
+        recipient = match.group(1) if match else self.cfg["team"]
+        text = text.replace(match.group(0), "").strip()
+        
+        # todo: lookup recipient's callsign
+        # todo: lookup teammates
+
         cot = self.new_cot(stale_in)
-        cot.set("uid", "GeoChat." + self.cfg["uid"] + "." + self.cfg["team"] + "." + msg_id)
+        cot.set("uid", "GeoChat." + self.cfg["uid"] + "." + recipient + "." + msg_id)
         cot.set("type", "b-t-f")
 
         detail = cot.find("detail")
         
-        chat = ET.SubElement(detail, "__chat", {
-            "parent": "TeamGroups",
-            "groupOwner": "false",
-            "messageId": msg_id,
-            "chatroom": self.cfg["team"],
-            "id": self.cfg['team'],
-            "senderCallsign": self.cfg['callsign']
-        })
+        if recipient == self.cfg["team"]:
+            chat = ET.SubElement(detail, "__chat", {
+                "parent": "TeamGroups" if recipient == self.cfg["team"] else "RootContactGroup",
+                "groupOwner": "false",
+                "messageId": msg_id,
+                "chatroom": self.cfg["team"],
+                "id": self.cfg['team'],
+                "senderCallsign": self.cfg['callsign']
+            })
+        else:
+            chat = ET.SubElement(detail, "__chat", {
+                "parent": "RootContactGroup",
+                "groupOwner": "false",
+                "messageId": msg_id,
+                "chatroom": recipient_info["callsign"],
+                "id": recipient_info["uid"],
+                "senderCallsign": self.cfg['callsign']
+            })
         
         remarks = ET.SubElement(detail, "remarks", {
             "source": "BAO.F.ATAK." + self.cfg["uid"],
@@ -190,6 +208,7 @@ class CotUtility:
         ''' record atoms '''
         if code.startswith("a-"):
             self.atoms[uid] = {
+                "uid": uid,
                 "code": code,
                 "callsign": callsign,
                 "data": point
@@ -200,6 +219,7 @@ class CotUtility:
         if code.startswith("b-m-r"):
             route = self.extract_route(cot)
             self.atoms[uid] = {
+                "uid": uid,
                 "code": code,
                 "callsign": callsign,
                 "data": route
