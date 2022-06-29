@@ -1,0 +1,6 @@
+import rospy
+from rostak.rostak_dispatch import RosTakDispatch
+
+if __name__ == "__main__":
+    client = RosTakDispatch()
+    rospy.spin()

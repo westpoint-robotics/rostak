@@ -1,6 +1,5 @@
 <launch>
     <arg name="tak_params" default="$(find rostak)/config/tak.yaml" />
-    
     <arg name="cot_params" default="$(find rostak)/config/cot.yaml" />
     <arg name="fix_topic" default="/fix" />
     <arg name="fix_rate" default="1" />
@@ -18,11 +17,9 @@
             <remap from="fix" to="fix_throttle" />
         </node>
 
-        <!-- <node pkg="rostak" name="roscot_fix" type="roscot_fix" output="screen">
-            <param name="cot_params" value="$(arg cot_params)" />
-            <param name="rate" value="$(arg fix_rate)" />
-            <remap from="fix" to="fix_throttle" />
-        </node> -->
+        <node pkg="rostak" name="rostak_dispatch" type="rostak_dispatch" output="screen">
+            <remap from="tak_goto" to="/jam/path"/>
+        </node>
 
         <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
         
