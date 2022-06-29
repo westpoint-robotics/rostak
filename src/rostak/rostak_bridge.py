@@ -29,12 +29,14 @@ class RosTakBridge:
         except:
             raise ValueError('TAK url must be valid')
 
+        # rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
+
         # bridge objects
         tasks = []
         if tx_proto:
-            tx_queue = asyncio.Queue()
-            tasks.append(pytak.TXWorker(tx_queue, self.config, tx_proto).run())
-            tasks.append(RosCotWorker(tx_queue, self.config).run())
+            self.tx_queue = asyncio.Queue()
+            tasks.append(pytak.TXWorker(self.tx_queue, self.config, tx_proto).run())
+            tasks.append(RosCotWorker(self.tx_queue, self.config).run())
 
         if rx_proto:
             rx_queue = asyncio.Queue()
@@ -50,6 +52,11 @@ class RosTakBridge:
             for task in done:
                 rospy.loginfo(f"Task completed: {task}")
     
+    def queue_cotmsg(self, cotmsg):
+        self.tx_queue.put(
+            cotmsg.data.encode('utf-8')
+        )
+
 class RosCotWorker(pytak.QueueWorker):
     """
     listen for CoT from ROS and enqueue for TAK
@@ -68,7 +75,7 @@ class RosCotWorker(pytak.QueueWorker):
         rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
         # TODO: better way to keep async worker running so ROS callback threading continues
         while True:
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(0.1)
     
 class RosTakReceiver():
     """
@@ -82,9 +89,13 @@ class RosTakReceiver():
         msg = String()
         rospy.loginfo(" *** Publishing on tak_rx ***")
         while True:
-            cot = await self.reader.readuntil(separator=b'</event>')
-            msg.data = cot.decode()
-            pub.publish(msg)
+            try:
+                cot = await self.reader.readuntil(separator=b'</event>')
+                msg.data = cot.decode()
+                pub.publish(msg)
+            except asyncio.exceptions.IncompleteReadError as e:
+                print(e)
+                rospy.sleep(1)
 
 if __name__ == '__main__':
     bridge = RosTakBridge()

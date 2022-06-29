@@ -18,7 +18,8 @@
         </node>
 
         <node pkg="rostak" name="rostak_dispatch" type="rostak_dispatch" output="screen">
-            <remap from="tak_goto" to="/jam/path"/>
+            <remap from="tak_goto" to="/navigation/global_frame_path"/>
+            <remap from="tak_deadreckon" to="/navigation/deadreckon"/>
         </node>
 
         <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />

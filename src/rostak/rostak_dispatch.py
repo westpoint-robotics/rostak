@@ -8,6 +8,7 @@ class RosTakDispatch:
         rospy.init_node("roscot_dispatch")
         rospy.Subscriber("tak_cmd", String, self.handle_cmd)
         self.pub_path = rospy.Publisher("tak_goto", Path, queue_size=1)
+        self.pub_dr = rospy.Publisher("tak_deadreckon", String, queue_size=1)
         self.id_q = Quaternion()
         self.id_q.x = 0
         self.id_q.y = 0
@@ -18,10 +19,12 @@ class RosTakDispatch:
         cmd = msg.data.split(" ")
         if cmd[0] == "#!goto":
             self.send_path(cmd[2:])
-        # else if cmd[0] == "#!explore":
-        # else if cmd[0] == "#!snap":
-        # else if cmd[0] == "#!bag":
-        # else if cmd[0] == "#!video":
+        elif cmd[0] == "#!dr":
+            self.send_deadreckon(cmd[2:])
+        # elif cmd[0] == "#!explore":
+        # elif cmd[0] == "#!snap":
+        # elif cmd[0] == "#!bag":
+        # elif cmd[0] == "#!video":
         else:
             rospy.loginfo("RosTakDispatcher does not support command %s", cmd[0])
 
@@ -42,6 +45,11 @@ class RosTakDispatch:
             pose.pose.orientation = self.id_q
             path.poses.append(pose)
         self.pub_path.publish(path)
+
+    def send_deadreckon(self, data):
+        msg = String()
+        msg.data = string.join(" ".join(data))
+        self.pub_dr.publish(msg)
 
 if __name__ == "__main__":
     client = RosTakDispatch()
