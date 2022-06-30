@@ -1,4 +1,5 @@
 import asyncio
+import os
 import pytak
 import rospy
 from std_msgs.msg import String
@@ -29,14 +30,16 @@ class RosTakBridge:
         except:
             raise ValueError('TAK url must be valid')
 
-        # rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
+        self.r_pipe, self.w_pipe = os.pipe()
+
+        rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
 
         # bridge objects
         tasks = []
         if tx_proto:
             self.tx_queue = asyncio.Queue()
             tasks.append(pytak.TXWorker(self.tx_queue, self.config, tx_proto).run())
-            tasks.append(RosCotWorker(self.tx_queue, self.config).run())
+            tasks.append(RosCotWorker(self.tx_queue, self.config, self.r_pipe).run())
 
         if rx_proto:
             rx_queue = asyncio.Queue()
@@ -53,29 +56,38 @@ class RosTakBridge:
                 rospy.loginfo(f"Task completed: {task}")
     
     def queue_cotmsg(self, cotmsg):
-        self.tx_queue.put(
-            cotmsg.data.encode('utf-8')
-        )
+        rospy.loginfo("writing to pipe")
+        os.write(self.w_pipe, (cotmsg.data + '\n').encode('utf-8'))
+        # self.tx_queue.put(
+        #     cotmsg.data.encode('utf-8')
+        # )
 
 class RosCotWorker(pytak.QueueWorker):
     """
     listen for CoT from ROS and enqueue for TAK
     """
-    def __init__(self, queue: asyncio.Queue, config: dict) -> None:
+    def __init__(self, queue: asyncio.Queue, config: dict, r_pipe) -> None:
         super().__init__(queue, config)
-        self.aio = asyncio.get_event_loop()
+        self.r_pipe = r_pipe
+        # self.aio = asyncio.get_event_loop()
 
-    def queue_cotmsg(self, cotmsg):
-        self.aio.create_task(
-            self.put_queue(cotmsg.data.encode('utf-8'))
-        )
+    # def queue_cotmsg(self, cotmsg):
+    #     self.aio.create_task(
+    #         self.put_queue(cotmsg.data.encode('utf-8'))
+    #     )
     
     async def run(self):
-        rospy.loginfo(" *** Subscribing to tak_tx ***")
-        rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
-        # TODO: better way to keep async worker running so ROS callback threading continues
+        r = os.fdopen(self.r_pipe)
         while True:
-            await asyncio.sleep(0.1)
+            rospy.loginfo("reading pipe")
+            cot = r.read()
+            rospy.loginfo(cot)
+            await self.put_queue(cot)
+        # rospy.loginfo(" *** Subscribing to tak_tx ***")
+        # rospy.Subscriber("tak_tx", String, self.queue_cotmsg)
+        # # TODO: better way to keep async worker running so ROS callback threading continues
+        # while True:
+        #     await asyncio.sleep(0.1)
     
 class RosTakReceiver():
     """

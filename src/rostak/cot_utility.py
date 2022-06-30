@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from math import cos, asin, sqrt, pi
 import re
 import uuid
 import xml.etree.ElementTree as ET
@@ -18,6 +19,7 @@ class CotUtility:
         self.course = 0.0
         self.speed = 0.0
         self.battery = 0
+        self.fixtime = datetime.now(timezone.utc)
         self.fix = {
             "latitude": 0.0,
             "longitude": 0.0,
@@ -130,7 +132,19 @@ class CotUtility:
         return cot
 
     def set_point(self, fix: dict):
-        self.fix = fix
+        ts = datetime.now(timezone.utc)
+        sec = (ts - self.fixtime).total_seconds()
+        m = self.distance(
+            self.fix['latitude'], self.fix['longitude'], self.fix['altitude'],
+            fix.latitude, fix.longitude, fix.altitude
+        )
+        self.speed = m / sec
+        self.fix = {
+            "latitude": fix.latitude,
+            "longitude": fix.longitude,
+            "altitude": fix.altitude
+        }
+        self.fixtime = ts
     
     def set_speed(self, speed):
         self.speed = speed
@@ -140,9 +154,9 @@ class CotUtility:
 
     def current_point(self):
         return {
-            "lat": str(self.fix.latitude),
-            "lon": str(self.fix.longitude),
-            "hae": str(self.fix.altitude),
+            "lat": str(self.fix['latitude']),
+            "lon": str(self.fix['longitude']),
+            "hae": str(self.fix['altitude']),
             "ce": str(self.cfg['radius']),
             "le": str(self.cfg['height'])
         }
@@ -237,3 +251,10 @@ class CotUtility:
             return cmd + " " + data
 
         return ""
+
+    def distance(self, lat1, lon1, alt1, lat2, lon2, alt2):
+        p = pi/180
+        a = 0.5 - cos((lat2-lat1)*p)/2 + cos(lat1*p) * cos(lat2*p) * (1-cos((lon2-lon1)*p))/2
+        h = 12742 * asin(sqrt(a)) #2*R*asin...
+        v = sqrt(h**2 + abs(alt1 - alt2)**2)
+        return h + v

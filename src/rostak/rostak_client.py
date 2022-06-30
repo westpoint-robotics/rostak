@@ -30,7 +30,7 @@ class RosTakClient:
         self.chat_msg.data = self.util.new_chat_msg(msg.data)
         self.pub_tx.publish(self.chat_msg)
 
-    def handle_fix(self, msg): 
+    def handle_fix(self, msg):
         """update local fix"""
         self.fixed = True
         self.util.set_point(msg)
