@@ -2,19 +2,18 @@
     <arg name="tak_params" default="$(find rostak)/config/tak.yaml" />
     <arg name="cot_params" default="$(find rostak)/config/cot.yaml" />
     <arg name="fix_topic" default="/fix" />
-    <arg name="fix_rate" default="1" />
 
     <group ns="tak">
 
         <node pkg="rostak" name="rostak_bridge" type="rostak_bridge" output="screen">
             <rosparam command="load" file="$(arg tak_params)" />
-            <env name="DEBUG" value="false" />
+            <!-- Debug is "true" or "" -->
+            <env name="DEBUG" value="true" />
         </node>
-        
+
         <node pkg="rostak" name="rostak_client" type="rostak_client" output="screen">
             <param name="cot_params" value="$(arg cot_params)" />
-            <param name="rate" value="$(arg fix_rate)" />
-            <remap from="fix" to="fix_throttle" />
+            <remap from="fix" to="$(arg fix_topic)" />
         </node>
 
         <node pkg="rostak" name="rostak_dispatch" type="rostak_dispatch" output="screen">
@@ -22,8 +21,6 @@
             <remap from="tak_deadreckon" to="/navigation/deadreckon"/>
         </node>
 
-        <node pkg="topic_tools" name="fix_throttle" type="throttle" args="messages $(arg fix_topic) $(arg fix_rate) fix_throttle" />
-        
     </group>
 
 </launch>

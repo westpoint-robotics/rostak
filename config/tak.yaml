@@ -1,6 +1,6 @@
+# COT_URL: tcp://tak.westpointrobotics.site:8088 # ATAK default multicast
 COT_URL: udp://239.2.3.1:6969 # ATAK default multicast
 # COT_URL: tls://host:8089
-# COT_URL: stcp://host:8088
 # COT_URL: tcp://host:8087
 # COT_URL: udp://host:8087
 PYTAK_TLS_CLIENT_CERT: "/home/user1/tak/client.pem"

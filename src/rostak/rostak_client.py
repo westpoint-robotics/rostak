@@ -1,13 +1,13 @@
 import rospy
+import takproto
 from rostak.cot_utility import CotUtility
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt8MultiArray
 from sensor_msgs.msg import NavSatFix
 
 class RosTakClient:
     def __init__(self):
         rospy.init_node("roscot_client")
         config_path = rospy.get_param("~cot_params")
-        self.rate = rospy.get_param("~rate", 0.2)
         self.pub_cmd = rospy.Publisher("tak_cmd", String, queue_size=1)
         self.pub_tx = rospy.Publisher("tak_tx", String, queue_size=1)
         self.status_msg = String()
@@ -15,7 +15,7 @@ class RosTakClient:
         self.util = CotUtility(config_path)
         self.fixed = False
         self.status_count = 0
-        rospy.Subscriber("tak_rx", String, self.handle_cot)
+        rospy.Subscriber("tak_rx", UInt8MultiArray, self.handle_cot)
         rospy.Subscriber("tak_chat", String, self.handle_chat)
         rospy.Subscriber("fix", NavSatFix, self.handle_fix)
 
@@ -42,13 +42,13 @@ class RosTakClient:
     def handle_heading(self, msg):
         self.util.set_course(0.0)
 
-    def publish_status(self): 
+    def publish_status(self):
         """Publish a status cot to tak."""
-        
+
         # wait for initial fix
         if not self.fixed:
             return
-        
+
         # process every 30s (stationary) or 1s if moving
         if self.status_count == 0 or self.util.is_moving():
             self.status_msg.data = self.util.new_status_msg()
